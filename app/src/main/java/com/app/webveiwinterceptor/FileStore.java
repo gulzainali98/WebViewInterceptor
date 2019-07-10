@@ -221,8 +221,7 @@ public class FileStore {
             File file= new File(dir, LocalStorageIndex.getObject().index.get(key));
             file.delete();
         }
-        File file= new File(context.getFilesDir(), Constants.INDEX_FILE_NAME);
-        file.delete();
+        deleteIndex();
     }
 
     public void updateIndex(){
