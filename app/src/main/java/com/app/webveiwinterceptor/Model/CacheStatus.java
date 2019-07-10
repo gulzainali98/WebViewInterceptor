@@ -7,7 +7,7 @@ public class CacheStatus {
     private static CacheStatus object;
 
     public CacheStatus(){
-        collectCache =false;
+        collectCache =true;
     }
 
     public static CacheStatus getStatusObject(){

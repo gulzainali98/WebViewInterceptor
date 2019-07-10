@@ -1,5 +1,6 @@
 package com.app.webveiwinterceptor.HTTPRequests;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -28,13 +29,16 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
 
 
     OnTaskCompleted taskCompleted;
+    Activity context;
 
 
 
     public GetCacheList(){}
 
-    public GetCacheList(OnTaskCompleted taskCompleted){
+    public GetCacheList(OnTaskCompleted taskCompleted, Activity context){
         this.taskCompleted=taskCompleted;
+        this.context=context;
+
     }
 
 

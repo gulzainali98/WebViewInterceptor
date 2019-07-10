@@ -1,12 +1,15 @@
 package com.app.webveiwinterceptor.HTTPRequests;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import com.app.webveiwinterceptor.Constants;
+import com.app.webveiwinterceptor.FileStore;
 import com.app.webveiwinterceptor.Model.Cache.HTMLCache;
 import com.app.webveiwinterceptor.Model.HTMLModel;
 import com.app.webveiwinterceptor.Interfaces.OnTaskCompleted;
+import com.app.webveiwinterceptor.Model.LocalStorageIndex;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,11 +24,13 @@ public class GetHTMLResource extends AsyncTask<String, Void, HTMLModel> {
     public static final int CONNECTION_TIMEOUT = 15000;
 
     OnTaskCompleted taskCompleted;
+    Activity context;
 
 
     public GetHTMLResource(){}
 
-    public GetHTMLResource(OnTaskCompleted taskCompleted){
+    public GetHTMLResource(OnTaskCompleted taskCompleted, Activity context){
+        this.context=context;
         this.taskCompleted=taskCompleted;
     }
 
@@ -83,6 +88,12 @@ public class GetHTMLResource extends AsyncTask<String, Void, HTMLModel> {
     protected void onPostExecute(HTMLModel result){
         Log.e("Result",result.HTML);
         HTMLCache.getCache().url_html.put(result.URL,result.HTML);
+        FileStore store= new FileStore(context);
+        String pathOfHTML=result.URL.replace("/","-");
+        store.saveHTML(result.HTML,pathOfHTML);
+        LocalStorageIndex.getObject().index.put(result.URL,pathOfHTML);
+        store.updateIndex();
+
         if(taskCompleted!=null){
         taskCompleted.onTaskCompleted(Constants.GET_HTML_RESOURCE_REQ_ID);}
         super.onPostExecute(result);

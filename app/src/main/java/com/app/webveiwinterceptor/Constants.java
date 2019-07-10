@@ -14,4 +14,8 @@ public class Constants {
 
     public static final String NO_CACHE_URL_BROWSER="http://mockapi1.herokuapp.com/index2.html";
 
+    public static final String INDEX_FILE_NAME="index.txt";
+
+    public static final String SKIP_CHARACTER_INDEX_FILE=";;;;";
+
 }

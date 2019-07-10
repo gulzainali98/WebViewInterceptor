@@ -2,6 +2,7 @@ package com.app.webveiwinterceptor;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -28,12 +29,15 @@ import com.app.webveiwinterceptor.Interfaces.CacheStateChangeListener;
 import com.app.webveiwinterceptor.Interfaces.OnTaskCompleted;
 import com.app.webveiwinterceptor.Model.CacheRequestModel;
 import com.app.webveiwinterceptor.Model.CacheStatus;
+import com.app.webveiwinterceptor.Model.LocalStorageIndex;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,11 +53,12 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     private static final int PERMISSIONS_REQUEST_CODE= 1240;
 
 //    Views
-    TextView mStatusView;
+    public TextView mStatusView;
     Button mInitButton;
     Button mNoCacheButton;
     Button mClearCacheButton;
     Switch mCacheSwitch;
+
 
 
     @Override
@@ -61,14 +66,24 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_view_controller2);
 
+
+
+        FileStore store= new FileStore(this);
+
+
+
         if(!checkAndRequestPermissions()){
             return;
         }
+
+
         mStatusView=(TextView)findViewById(R.id.status);
         mInitButton=(Button)findViewById(R.id.init_link);
         mNoCacheButton=(Button)findViewById(R.id.no_cache_link);
         mClearCacheButton=(Button)findViewById(R.id.clear_cache_btn);
         mCacheSwitch=(Switch)findViewById(R.id.cache_switch);
+
+
 
         mCacheSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -78,21 +93,63 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
             }
         });
 
-        bitmapRequest= new GetBitmapResource(this);
+        bitmapRequest= new GetBitmapResource(this,this);
 
-        HTMLrequest= new GetHTMLResource(this);
-        cache=new GetCacheList(this);
+        HTMLrequest= new GetHTMLResource(this,this);
+        cache=new GetCacheList(this,this);
         mStatusView.setText("Please Wait! Initializing Browser and Loading INIT Cache");
+        LaunchSequence();
 
-        cache.execute(Constants.CACHE_URL);
 
 
     }
 
+    private void LaunchSequence(){
+        loadLocalCache();
+        cache.execute(Constants.CACHE_URL);
+    }
+    private void loadLocalCache(){
+        FileStore store= new FileStore(this);
+        LocalStorageIndex.getObject().index=store.readIndex();
+        Set<String> indexKeys=LocalStorageIndex.getObject().index.keySet();
+        HashMap<String,String> index= LocalStorageIndex.getObject().index;
+
+        Log.e("Index", index.toString());
+
+        //this if statement is only to print logs so please forgive the complexity of condition statemenet here
+        //i am going to delete it afterwards
+        if(index.get("https://mockapi1.herokuapp.com/index1.html")!=null && store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html"))!=null &&
+                        store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html"))!="") {
+            Log.e("HTML 4m LoadLocalCache", store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html").toString()));
+        }
+
+        for(String key: indexKeys){
+            String urlOfResource=key;
+            if(urlOfResource.contains(".html")){
+                String HTML= store.readHTML(index.get(key));
+                if(HTMLCache.getCache().url_html.containsKey(urlOfResource) ||
+                        HTML=="" || HTML==null){
+                    continue;
+                }
+                HTMLCache.getCache().url_html.put(urlOfResource, HTML);
+
+            }
+            if(urlOfResource.contains(".png")){
+                Bitmap bitmap=store.loadImage(index.get(key));
+                if(BitmapCache.getCache().url_bitmap.containsKey(urlOfResource) ||
+                    bitmap==null) {
+                    continue;
+                }
+
+                BitmapCache.getCache().url_bitmap.put(urlOfResource, bitmap);
+            }
+        }
+
+    }
     private void initBroswer(String initURL){
 
         browser = (WebView) findViewById(R.id.web_view);
-        browser.setWebViewClient(new Browser(this));
+        browser.setWebViewClient(new Browser(this,this));
 
 
         browser.getSettings().setAllowFileAccess(true);
@@ -120,7 +177,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
                 if(grantResults[i]== PackageManager.PERMISSION_DENIED){
 
-//                    Toast.makeText(this,"You have not granted all permissions!",Toast.LENGTH_LONG).show();
+//
                 }
             }
         }
@@ -155,11 +212,11 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     @Override
     public void onTaskCompleted(int reqID) {
         if(reqID== Constants.GET_CACHE_REQ_ID){
-            Log.e("Printing Cache", CacheInfo.getCacheInfo().resourceCache.toString());
+//            Log.e("Printing Cache", CacheInfo.getCacheInfo().resourceCache.toString());
                 for(String url : CacheInfo.getCacheInfo().resourceCache){
                     if(url.contains(".html")){
                         HTMLrequest.execute(url);
-                        Log.e("Start HTML Cache",url) ;
+//                        Log.e("Start HTML Cache",url) ;
                     }
                 }
         }
@@ -168,7 +225,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                 if(url.contains(".png")){
 
                     bitmapRequest.execute(url);
-                    Log.e("Start Bitmap Cache", url);
+//                    Log.e("Start Bitmap Cache", url);
                 }
             }
         }
@@ -194,8 +251,9 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     @Override
     public void onStateChanged(String description) {
-        Log.e("State Changed",description);
+//        Log.e("State Changed",description);
         mStatusView.setText(description);
+
     }
 
     @Override
@@ -210,41 +268,29 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
             browser.loadUrl(Constants.NO_CACHE_URL_BROWSER);
         }
         if(view.getId()==R.id.clear_cache_btn){
-            clearCache();
             browser.clearCache(true);
+            FileStore store= new FileStore(this);
+            store.clearCache();
+            clearCache();
+
         }
 
     }
 
     private void clearCache(){
+//        Log.e("index manual",LocalStorageIndex.getObject().index.toString());
+
         CacheInfo.getCacheInfo().resourceCache= new ArrayList<>();
         BitmapCache.getCache().url_bitmap=new HashMap<>();
         HTMLCache.getCache().url_html= new HashMap<>();
-    }
-
-    public void mimicProcess(int reqID,String URL){
-        mStatusView.setText("Cache Started : "+URL);
-        if(reqID==Constants.GET_BITMAP_RESOURCE_REQ_ID){
-            bitmapRequest= new GetBitmapResource(new OnTaskCompleted() {
-                @Override
-                public void onTaskCompleted(int reqID) {
-                    mStatusView.setText("Done");
-                }
-            });
-            bitmapRequest.execute(URL);
-        }
-        if(reqID==Constants.GET_HTML_RESOURCE_REQ_ID){
-            HTMLrequest= new GetHTMLResource(new OnTaskCompleted() {
-                @Override
-                public void onTaskCompleted(int reqID) {
-                    mStatusView.setText("Done");
-                }
-            });
-            HTMLrequest.execute(URL);
-        }
-
+        LocalStorageIndex.getObject().index= new HashMap<>();
 
     }
+
+
+
+
+
 
     @Override
     public void cacheRequest(int reqID, String URL) {
@@ -255,7 +301,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                 public void onTaskCompleted(int reqID) {
                     mStatusView.setText("Done");
                 }
-            });
+            },this);
             bitmapRequest.execute(URL);
         }
         if(reqID==Constants.GET_HTML_RESOURCE_REQ_ID){
@@ -264,7 +310,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                 public void onTaskCompleted(int reqID) {
                     mStatusView.setText("Done");
                 }
-            });
+            },this);
             HTMLrequest.execute(URL);
         }
     }
@@ -278,7 +324,6 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                 handler.post(new Runnable() {
                     public void run() {
                         try {
-
                             CacheService();
 
                         } catch (Exception e) {
@@ -300,7 +345,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         Iterator<String> it= cacheQueue.iterator();
         for(int i=0; i< cacheQueue.size(); i++){
             String URL= cacheQueue.poll().toString();
-            Log.e("Caching service: ", URL);
+//            Log.e("Caching service: ", URL);
             if(URL.contains(".html")){
                 mStatusView.setText("Caching HTML Resource: "+ URL);
                 GetHTMLResource req= new GetHTMLResource(new OnTaskCompleted() {
@@ -308,7 +353,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                     public void onTaskCompleted(int reqID) {
                         mStatusView.setText("HTML Resource Cached");
                     }
-                });
+                },this);
                 req.execute(URL);
             }
             if(URL.contains(".png")){
@@ -318,7 +363,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
                     public void onTaskCompleted(int reqID) {
                         mStatusView.setText("Bitmap Resourced Cached");
                     }
-                });
+                },this);
                 req.execute(URL);
             }
         }
