@@ -41,8 +41,8 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     WebView browser;
     String[] permissions= {Manifest.permission.WRITE_EXTERNAL_STORAGE,
-    Manifest.permission.ACCESS_FINE_LOCATION,
-    Manifest.permission.INTERNET};
+    Manifest.permission.INTERNET,
+    Manifest.permission.READ_EXTERNAL_STORAGE};
     GetBitmapResource bitmapRequest;
     GetHTMLResource HTMLrequest;
     GetCacheList cache;
@@ -78,16 +78,11 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
             }
         });
 
-        mInitButton.setOnClickListener(this);
-        mNoCacheButton.setOnClickListener(this);
-        mClearCacheButton.setOnClickListener(this);
-
-
         bitmapRequest= new GetBitmapResource(this);
 
         HTMLrequest= new GetHTMLResource(this);
         cache=new GetCacheList(this);
-        mStatusView.setText("Initializing Browser and Loading INIT Cache");
+        mStatusView.setText("Please Wait! Initializing Browser and Loading INIT Cache");
 
         cache.execute(Constants.CACHE_URL);
 
@@ -125,7 +120,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
                 if(grantResults[i]== PackageManager.PERMISSION_DENIED){
 
-                    Toast.makeText(this,"You have not granted all permissions!",Toast.LENGTH_LONG).show();
+//                    Toast.makeText(this,"You have not granted all permissions!",Toast.LENGTH_LONG).show();
                 }
             }
         }
@@ -181,9 +176,20 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         if(reqID==Constants.GET_BITMAP_RESOURCE_REQ_ID){
 
             mStatusView.setText("Initialization Complete.");
+
             initBroswer(Constants.INIT_URL_BROWSER);
+            initUI();
             startCacheService();
         }
+    }
+
+    public void initUI(){
+
+
+        mInitButton.setOnClickListener(this);
+        mNoCacheButton.setOnClickListener(this);
+        mClearCacheButton.setOnClickListener(this);
+
     }
 
     @Override
