@@ -259,6 +259,8 @@ public class FileStore {
         return deleted;
     }
 
+
+
     public byte[] readIntoBytes(String path){
         File file= new File(context.getFilesDir(),path);
         FileInputStream fis = null;
@@ -272,6 +274,8 @@ public class FileStore {
         return data;
     }
 
+
+
     public void clearCache(){
         File dir= context.getFilesDir();
 
@@ -282,6 +286,8 @@ public class FileStore {
         deleteIndex();
     }
 
+
+    
     public void updateIndex(){
         deleteIndex();
 //        Log.e("updated index",LocalStorageIndex.getObject().index.toString());
