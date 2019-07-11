@@ -6,7 +6,6 @@ import android.util.Log;
 
 import com.app.webveiwinterceptor.Model.Cache.CacheInfo;
 import com.app.webveiwinterceptor.Constants;
-import com.app.webveiwinterceptor.Model.HTMLModel;
 import com.app.webveiwinterceptor.Interfaces.OnTaskCompleted;
 
 import org.json.simple.JSONObject;
@@ -48,7 +47,6 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
         String stringUrl = params[0];
         String result= new String();
 
-        HTMLModel model= new HTMLModel();
 
         String inputLine;
 
@@ -94,8 +92,7 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
         catch(ParseException e){
 
         }
-        model.HTML=result;
-        model.URL=stringUrl;
+
         return json;
     }
     @Override

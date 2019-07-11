@@ -7,6 +7,8 @@ import android.util.Log;
 
 import com.app.webveiwinterceptor.Model.LocalStorageIndex;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,7 +18,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,8 +33,41 @@ public class FileStore {
     public FileStore(Activity context){
         this.context=context;
     }
-    public void saveImage(Bitmap bitmapImage, String path){
+
+    public void saveFile(byte[] data, String path){
         // Create imageDir
+        File file=new File(context.getFilesDir(),path);
+
+
+
+        FileOutputStream fos = null;
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            fos = new FileOutputStream(file);
+
+            fos.write(data);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+    public void saveImage(byte[] data, String path){
+        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+        saveImage(bitmap,path);
+    }
+    public void saveImage(Bitmap bitmapImage, String path){
+
         File mypath=new File(context.getFilesDir(),path);
 
         FileOutputStream fos = null;
@@ -48,6 +87,8 @@ public class FileStore {
 
 
     }
+
+
 
     public Bitmap loadImage(String path)
     {
@@ -69,11 +110,11 @@ public class FileStore {
         String filename=path;
         String data="";
         try {
-            //Attaching BufferedReader to the FileInputStream by the help of InputStreamReader
+
             BufferedReader inputReader = new BufferedReader(new InputStreamReader(
                     context.openFileInput(filename)));
             String inputString;
-            //Reading data line by line and storing it into the stringbuffer
+
             while ((inputString = inputReader.readLine()) != null) {
 
                 data=data+inputString;
@@ -90,7 +131,11 @@ public class FileStore {
 
 
     }
-
+    public void saveHTML(byte[] data, String path){
+        String HTML= Base64.getEncoder().encodeToString(data);
+        Log.e("File Store", HTML);
+        saveHTML(HTML,path);
+    }
     public void saveHTML(String HTML, String path){
         String filename=path;
         String data=HTML;
@@ -105,7 +150,7 @@ public class FileStore {
             }
         }catch (IOException e){}
 
-        FileOutputStream fos;
+
         try {
 
             FileOutputStream fOut= new FileOutputStream(file);
@@ -128,10 +173,10 @@ public class FileStore {
     }
 
     public void saveIndex(Map<String, String> index){
-        String filename=Constants.INDEX_FILE_NAME;
+
         ArrayList<String> data=mapToString(index);
 
-//        Turning map into a string
+
         File dir = context.getFilesDir();
         File file = new File(dir, Constants.INDEX_FILE_NAME);
         try {
@@ -175,7 +220,7 @@ public class FileStore {
             data.add(entry);
 
 
-            it.remove(); // avoids a ConcurrentModificationException
+            it.remove();
         }
 
         return data;
@@ -186,11 +231,11 @@ public class FileStore {
 
         String filename=Constants.INDEX_FILE_NAME;
         try {
-            //Attaching BufferedReader to the FileInputStream by the help of InputStreamReader
+
             BufferedReader inputReader = new BufferedReader(new InputStreamReader(
                     context.openFileInput(filename)));
             String inputString;
-            //Reading data line by line and storing it into the stringbuffer
+
             while ((inputString = inputReader.readLine()) != null) {
 
                 String[] keyValuePair= inputString.split(Constants.SKIP_CHARACTER_INDEX_FILE);
@@ -202,7 +247,7 @@ public class FileStore {
 
             e.printStackTrace();
         }
-        //Displaying data on the toast
+
        return index;
 
     }
@@ -212,6 +257,19 @@ public class FileStore {
         File file = new File(dir, Constants.INDEX_FILE_NAME);
         boolean deleted = file.delete();
         return deleted;
+    }
+
+    public byte[] readIntoBytes(String path){
+        File file= new File(context.getFilesDir(),path);
+        FileInputStream fis = null;
+        byte[] data= null;
+        try{
+            Path path2= Paths.get(file.getAbsolutePath());
+            data=Files.readAllBytes(path2);
+
+        }
+        catch(IOException e){}
+        return data;
     }
 
     public void clearCache(){
@@ -228,5 +286,6 @@ public class FileStore {
         deleteIndex();
 //        Log.e("updated index",LocalStorageIndex.getObject().index.toString());
         saveIndex(new HashMap<String, String>(LocalStorageIndex.getObject().index));
+
     }
 }

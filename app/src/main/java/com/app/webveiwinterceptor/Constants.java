@@ -18,4 +18,6 @@ public class Constants {
 
     public static final String SKIP_CHARACTER_INDEX_FILE=";;;;";
 
+    public static final int GET_CACHE_FILE_REQ_ID =4;
+
 }

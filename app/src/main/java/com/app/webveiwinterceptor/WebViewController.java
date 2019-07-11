@@ -2,7 +2,6 @@ package com.app.webveiwinterceptor;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -15,15 +14,12 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 
-import com.app.webveiwinterceptor.Model.Cache.BitmapCache;
+import com.app.webveiwinterceptor.HTTPRequests.GetCacheFile;
 import com.app.webveiwinterceptor.Model.Cache.CacheInfo;
-import com.app.webveiwinterceptor.Model.Cache.HTMLCache;
-import com.app.webveiwinterceptor.HTTPRequests.GetBitmapResource;
+import com.app.webveiwinterceptor.Model.Cache.CacheMap;
 import com.app.webveiwinterceptor.HTTPRequests.GetCacheList;
-import com.app.webveiwinterceptor.HTTPRequests.GetHTMLResource;
 import com.app.webveiwinterceptor.Interfaces.CacheRequestListener;
 import com.app.webveiwinterceptor.Interfaces.CacheStateChangeListener;
 import com.app.webveiwinterceptor.Interfaces.OnTaskCompleted;
@@ -31,7 +27,6 @@ import com.app.webveiwinterceptor.Model.CacheRequestModel;
 import com.app.webveiwinterceptor.Model.CacheStatus;
 import com.app.webveiwinterceptor.Model.LocalStorageIndex;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,9 +42,9 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     String[] permissions= {Manifest.permission.WRITE_EXTERNAL_STORAGE,
     Manifest.permission.INTERNET,
     Manifest.permission.READ_EXTERNAL_STORAGE};
-    GetBitmapResource bitmapRequest;
-    GetHTMLResource HTMLrequest;
-    GetCacheList cache;
+
+
+    FileStore store;
     private static final int PERMISSIONS_REQUEST_CODE= 1240;
 
 //    Views
@@ -68,7 +63,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
 
 
-        FileStore store= new FileStore(this);
+        store= new FileStore(this);
 
 
 
@@ -93,11 +88,11 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
             }
         });
 
-        bitmapRequest= new GetBitmapResource(this,this);
 
-        HTMLrequest= new GetHTMLResource(this,this);
-        cache=new GetCacheList(this,this);
+
+
         mStatusView.setText("Please Wait! Initializing Browser and Loading INIT Cache");
+
         LaunchSequence();
 
 
@@ -106,8 +101,25 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     private void LaunchSequence(){
         loadLocalCache();
+        getResourcesToCacheAndStartUI();
+    }
+
+    public OnTaskCompleted onInitCacheCompleteListener= new OnTaskCompleted() {
+        @Override
+        public void onTaskCompleted(int reqID) {
+            mStatusView.setText("Initialization Complete!");
+            initBroswer(Constants.INIT_URL_BROWSER);
+            initUI();
+            startCacheService();
+        }
+    };
+
+    private void getResourcesToCacheAndStartUI(){
+
+        GetCacheList cache= new GetCacheList(this,this);
         cache.execute(Constants.CACHE_URL);
     }
+
     private void loadLocalCache(){
         FileStore store= new FileStore(this);
         LocalStorageIndex.getObject().index=store.readIndex();
@@ -125,23 +137,16 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
         for(String key: indexKeys){
             String urlOfResource=key;
-            if(urlOfResource.contains(".html")){
-                String HTML= store.readHTML(index.get(key));
-                if(HTMLCache.getCache().url_html.containsKey(urlOfResource) ||
-                        HTML=="" || HTML==null){
-                    continue;
-                }
-                HTMLCache.getCache().url_html.put(urlOfResource, HTML);
 
+            byte[] data= store.readIntoBytes(index.get(key));
+
+            boolean isFileCached=CacheMap.getMap().map.containsKey(key);
+            if(data==null){
+                Log.e("Couldn't read", key);
             }
-            if(urlOfResource.contains(".png")){
-                Bitmap bitmap=store.loadImage(index.get(key));
-                if(BitmapCache.getCache().url_bitmap.containsKey(urlOfResource) ||
-                    bitmap==null) {
-                    continue;
-                }
-
-                BitmapCache.getCache().url_bitmap.put(urlOfResource, bitmap);
+            if(data!=null && !isFileCached){
+                Log.e("Local Cache ",key);
+                CacheMap.getMap().map.put(key, data);
             }
         }
 
@@ -212,32 +217,19 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     @Override
     public void onTaskCompleted(int reqID) {
         if(reqID== Constants.GET_CACHE_REQ_ID){
-//            Log.e("Printing Cache", CacheInfo.getCacheInfo().resourceCache.toString());
-                for(String url : CacheInfo.getCacheInfo().resourceCache){
-                    if(url.contains(".html")){
-                        HTMLrequest.execute(url);
-//                        Log.e("Start HTML Cache",url) ;
+            for(int i=0; i< CacheInfo.getCacheInfo().resourceCache.size();i++){
+
+                    GetCacheFile cacheFileRequest= new GetCacheFile(this);
+
+                    String url= CacheInfo.getCacheInfo().resourceCache.get(i);
+
+                    if(i==CacheInfo.getCacheInfo().resourceCache.size()-1){
+                        cacheFileRequest.setListener(onInitCacheCompleteListener);
                     }
+                    cacheFileRequest.execute(url);
                 }
         }
-        if(reqID==Constants.GET_HTML_RESOURCE_REQ_ID){
-            for(String url : CacheInfo.getCacheInfo().resourceCache){
-                if(url.contains(".png")){
 
-                    bitmapRequest.execute(url);
-//                    Log.e("Start Bitmap Cache", url);
-                }
-            }
-        }
-
-        if(reqID==Constants.GET_BITMAP_RESOURCE_REQ_ID){
-
-            mStatusView.setText("Initialization Complete.");
-
-            initBroswer(Constants.INIT_URL_BROWSER);
-            initUI();
-            startCacheService();
-        }
     }
 
     public void initUI(){
@@ -251,7 +243,6 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     @Override
     public void onStateChanged(String description) {
-//        Log.e("State Changed",description);
         mStatusView.setText(description);
 
     }
@@ -264,26 +255,24 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         }
         if(view.getId()==R.id.no_cache_link){
 
-//            mimicProcess(Constants.GET_HTML_RESOURCE_REQ_ID,Constants.NO_CACHE_URL_BROWSER);
+
             browser.loadUrl(Constants.NO_CACHE_URL_BROWSER);
         }
         if(view.getId()==R.id.clear_cache_btn){
-            browser.clearCache(true);
-            FileStore store= new FileStore(this);
+            clearRAMCache();
             store.clearCache();
-            clearCache();
+
 
         }
 
     }
 
-    private void clearCache(){
-//        Log.e("index manual",LocalStorageIndex.getObject().index.toString());
-
+    private void clearRAMCache(){
+        browser.clearCache(true);
         CacheInfo.getCacheInfo().resourceCache= new ArrayList<>();
-        BitmapCache.getCache().url_bitmap=new HashMap<>();
-        HTMLCache.getCache().url_html= new HashMap<>();
         LocalStorageIndex.getObject().index= new HashMap<>();
+
+        CacheMap.getMap().map=new HashMap<>();
 
     }
 
@@ -294,25 +283,7 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     @Override
     public void cacheRequest(int reqID, String URL) {
-        mStatusView.setText("Cache Started : "+URL);
-        if(reqID==Constants.GET_BITMAP_RESOURCE_REQ_ID){
-            bitmapRequest= new GetBitmapResource(new OnTaskCompleted() {
-                @Override
-                public void onTaskCompleted(int reqID) {
-                    mStatusView.setText("Done");
-                }
-            },this);
-            bitmapRequest.execute(URL);
-        }
-        if(reqID==Constants.GET_HTML_RESOURCE_REQ_ID){
-            HTMLrequest= new GetHTMLResource(new OnTaskCompleted() {
-                @Override
-                public void onTaskCompleted(int reqID) {
-                    mStatusView.setText("Done");
-                }
-            },this);
-            HTMLrequest.execute(URL);
-        }
+
     }
 
     public void startCacheService() {
@@ -345,27 +316,15 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         Iterator<String> it= cacheQueue.iterator();
         for(int i=0; i< cacheQueue.size(); i++){
             String URL= cacheQueue.poll().toString();
-//            Log.e("Caching service: ", URL);
-            if(URL.contains(".html")){
-                mStatusView.setText("Caching HTML Resource: "+ URL);
-                GetHTMLResource req= new GetHTMLResource(new OnTaskCompleted() {
-                    @Override
-                    public void onTaskCompleted(int reqID) {
-                        mStatusView.setText("HTML Resource Cached");
-                    }
-                },this);
-                req.execute(URL);
-            }
-            if(URL.contains(".png")){
-                mStatusView.setText("Caching Bitmap Resource: "+ URL);
-                GetBitmapResource req= new GetBitmapResource(new OnTaskCompleted() {
-                    @Override
-                    public void onTaskCompleted(int reqID) {
-                        mStatusView.setText("Bitmap Resourced Cached");
-                    }
-                },this);
-                req.execute(URL);
-            }
+            mStatusView.setText("Caching Resources");
+            GetCacheFile cachReq= new GetCacheFile(new OnTaskCompleted() {
+                @Override
+                public void onTaskCompleted(int reqID) {
+                    mStatusView.setText("Resource Cached");
+                }
+            }, this);
+
+            cachReq.execute(URL);
         }
     }
 }
