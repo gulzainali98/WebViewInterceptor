@@ -141,11 +141,8 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
             byte[] data= store.readIntoBytes(index.get(key));
 
             boolean isFileCached=CacheMap.getMap().map.containsKey(key);
-            if(data==null){
-                Log.e("Couldn't read", key);
-            }
+
             if(data!=null && !isFileCached){
-                Log.e("Local Cache ",key);
                 CacheMap.getMap().map.put(key, data);
             }
         }

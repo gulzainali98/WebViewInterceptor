@@ -287,7 +287,7 @@ public class FileStore {
     }
 
 
-    
+
     public void updateIndex(){
         deleteIndex();
 //        Log.e("updated index",LocalStorageIndex.getObject().index.toString());

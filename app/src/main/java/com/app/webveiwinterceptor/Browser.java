@@ -59,7 +59,6 @@ public class Browser extends WebViewClient {
 
         boolean isFileCached= CacheMap.getMap().map.containsKey(request.getUrl().toString());
         if(isFileCached){
-            Log.e("Browser", "Serving new cache m'lord");
             byte byteFileArray[]= CacheMap.getMap().map.get(request.getUrl().toString());
             ByteArrayInputStream isnew = new ByteArrayInputStream(byteFileArray);
             return new WebResourceResponse(null, null, isnew);
