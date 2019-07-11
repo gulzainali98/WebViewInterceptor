@@ -6,13 +6,13 @@ public class CacheStatus {
 
     private static CacheStatus object;
 
-    public CacheStatus(){
-        collectCache =true;
+    public CacheStatus() {
+        collectCache = true;
     }
 
-    public static CacheStatus getStatusObject(){
-        if(object==null){
-            object= new CacheStatus();
+    public static CacheStatus getStatusObject() {
+        if (object == null) {
+            object = new CacheStatus();
         }
         return object;
     }

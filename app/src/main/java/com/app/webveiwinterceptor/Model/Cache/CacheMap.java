@@ -1,7 +1,6 @@
 package com.app.webveiwinterceptor.Model.Cache;
 
 
-
 import java.util.HashMap;
 
 public class CacheMap {
@@ -10,14 +9,14 @@ public class CacheMap {
 
     private static CacheMap object;
 
-    public CacheMap(){
-        map=new HashMap<>();
+    public CacheMap() {
+        map = new HashMap<>();
     }
 
-    public static CacheMap getMap(){
-        if(object==null){
+    public static CacheMap getMap() {
+        if (object == null) {
 
-            object= new CacheMap();
+            object = new CacheMap();
         }
         return object;
     }

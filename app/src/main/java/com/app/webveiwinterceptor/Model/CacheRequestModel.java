@@ -9,13 +9,13 @@ public class CacheRequestModel {
 
     private static CacheRequestModel object;
 
-    public CacheRequestModel(){
-        cacheURLs=new LinkedList<String>();
+    public CacheRequestModel() {
+        cacheURLs = new LinkedList<String>();
     }
 
-    public static CacheRequestModel getCacheRequests(){
-        if(object==null){
-            object= new CacheRequestModel();
+    public static CacheRequestModel getCacheRequests() {
+        if (object == null) {
+            object = new CacheRequestModel();
         }
         return object;
     }

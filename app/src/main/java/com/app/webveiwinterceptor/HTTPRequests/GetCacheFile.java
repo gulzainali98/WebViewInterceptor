@@ -23,20 +23,20 @@ public class GetCacheFile extends AsyncTask<String, Void, HTTPReqModel> {
 
     FileStore store;
 
-    public void setListener(OnTaskCompleted taskCompleted){
-        this.taskCompleted=taskCompleted;
+    public void setListener(OnTaskCompleted taskCompleted) {
+        this.taskCompleted = taskCompleted;
     }
 
-    public GetCacheFile(Activity context){
-        this.context=context;
-        taskCompleted=null;
-        store= new FileStore(context);
+    public GetCacheFile(Activity context) {
+        this.context = context;
+        taskCompleted = null;
+        store = new FileStore(context);
     }
 
-    public GetCacheFile(OnTaskCompleted taskCompleted, Activity context){
-        store= new FileStore(context);
-        this.context=context;
-        this.taskCompleted=taskCompleted;
+    public GetCacheFile(OnTaskCompleted taskCompleted, Activity context) {
+        store = new FileStore(context);
+        this.context = context;
+        this.taskCompleted = taskCompleted;
     }
 
 
@@ -44,7 +44,7 @@ public class GetCacheFile extends AsyncTask<String, Void, HTTPReqModel> {
     protected HTTPReqModel doInBackground(String... params) {
         String requestUrl = params[0];
 
-        byte[] data= null;
+        byte[] data = null;
 
         try {
             URL url = new URL(requestUrl);
@@ -52,14 +52,14 @@ public class GetCacheFile extends AsyncTask<String, Void, HTTPReqModel> {
             conn.connect();
             int lenghtOfFile = conn.getContentLength();
 
-            data= readBytes(conn.getInputStream());
+            data = readBytes(conn.getInputStream());
 //            CacheHolder.getObject().data=data;
 
         } catch (Exception ex) {
         }
-        HTTPReqModel resource= new HTTPReqModel();
-        resource.data=data;
-        resource.url=requestUrl;
+        HTTPReqModel resource = new HTTPReqModel();
+        resource.data = data;
+        resource.url = requestUrl;
 
         return resource;
     }
@@ -68,24 +68,23 @@ public class GetCacheFile extends AsyncTask<String, Void, HTTPReqModel> {
     protected void onPostExecute(HTTPReqModel resource) {
 
 
-
         //updating RAM Cache
 
-        CacheMap.getMap().map.put(resource.url,resource.data);
+        CacheMap.getMap().map.put(resource.url, resource.data);
 
-        String pathOfFile=resource.url.replace("/","-");
+        String pathOfFile = resource.url.replace("/", "-");
 
-        store.saveFile(resource.data,pathOfFile);
+        store.saveFile(resource.data, pathOfFile);
 
-        LocalStorageIndex.getObject().index.put(resource.url,pathOfFile);
+        LocalStorageIndex.getObject().index.put(resource.url, pathOfFile);
 
 
         store.updateIndex();
 
 
-
-        if(taskCompleted!=null){
-            taskCompleted.onTaskCompleted(Constants.GET_CACHE_FILE_REQ_ID);}
+        if (taskCompleted != null) {
+            taskCompleted.onTaskCompleted(Constants.GET_CACHE_FILE_REQ_ID);
+        }
 
         super.onPostExecute(resource);
     }

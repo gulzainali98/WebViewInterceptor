@@ -23,6 +23,7 @@ import com.app.webveiwinterceptor.HTTPRequests.GetCacheList;
 import com.app.webveiwinterceptor.Interfaces.CacheRequestListener;
 import com.app.webveiwinterceptor.Interfaces.CacheStateChangeListener;
 import com.app.webveiwinterceptor.Interfaces.OnTaskCompleted;
+import com.app.webveiwinterceptor.Model.CacheManagerModel;
 import com.app.webveiwinterceptor.Model.CacheRequestModel;
 import com.app.webveiwinterceptor.Model.CacheStatus;
 import com.app.webveiwinterceptor.Model.LocalStorageIndex;
@@ -39,21 +40,20 @@ import java.util.TimerTask;
 public class WebViewController extends AppCompatActivity implements CacheRequestListener, OnTaskCompleted, CacheStateChangeListener, View.OnClickListener {
 
     WebView browser;
-    String[] permissions= {Manifest.permission.WRITE_EXTERNAL_STORAGE,
-    Manifest.permission.INTERNET,
-    Manifest.permission.READ_EXTERNAL_STORAGE};
+    String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET,
+            Manifest.permission.READ_EXTERNAL_STORAGE};
 
 
     FileStore store;
-    private static final int PERMISSIONS_REQUEST_CODE= 1240;
+    private static final int PERMISSIONS_REQUEST_CODE = 1240;
 
-//    Views
-    public TextView mStatusView;
+    //    Views
+    TextView mStatusView;
     Button mInitButton;
     Button mNoCacheButton;
     Button mClearCacheButton;
     Switch mCacheSwitch;
-
 
 
     @Override
@@ -62,33 +62,23 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         setContentView(R.layout.activity_web_view_controller2);
 
 
-
-        store= new FileStore(this);
-
+        store = new FileStore(this);
 
 
-        if(!checkAndRequestPermissions()){
+        if (!checkAndRequestPermissions()) {
             return;
         }
 
 
-        mStatusView=(TextView)findViewById(R.id.status);
-        mInitButton=(Button)findViewById(R.id.init_link);
-        mNoCacheButton=(Button)findViewById(R.id.no_cache_link);
-        mClearCacheButton=(Button)findViewById(R.id.clear_cache_btn);
-        mCacheSwitch=(Switch)findViewById(R.id.cache_switch);
+        mStatusView = (TextView) findViewById(R.id.status);
+        mInitButton = (Button) findViewById(R.id.init_link);
+        mNoCacheButton = (Button) findViewById(R.id.no_cache_link);
+        mClearCacheButton = (Button) findViewById(R.id.clear_cache_btn);
+        mCacheSwitch = (Switch) findViewById(R.id.cache_switch);
 
 
-
-        mCacheSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // do something, the isChecked will be
-                // true if the switch is in the On position
-                CacheStatus.getStatusObject().collectCache =isChecked;
-            }
-        });
-
-
+        CacheManagerModel.getObject().mStatusText = mStatusView;
+        CacheManagerModel.getObject().context = this;
 
 
         mStatusView.setText("Please Wait! Initializing Browser and Loading INIT Cache");
@@ -96,62 +86,55 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         LaunchSequence();
 
 
-
     }
 
-    private void LaunchSequence(){
+    private void LaunchSequence() {
         loadLocalCache();
         getResourcesToCacheAndStartUI();
     }
 
-    public OnTaskCompleted onInitCacheCompleteListener= new OnTaskCompleted() {
+    public OnTaskCompleted onInitCacheCompleteListener = new OnTaskCompleted() {
         @Override
         public void onTaskCompleted(int reqID) {
             mStatusView.setText("Initialization Complete!");
             initBroswer(Constants.INIT_URL_BROWSER);
             initUI();
-            startCacheService();
+            ;
         }
     };
 
-    private void getResourcesToCacheAndStartUI(){
+    private void getResourcesToCacheAndStartUI() {
 
-        GetCacheList cache= new GetCacheList(this,this);
+        GetCacheList cache = new GetCacheList(this, this);
         cache.execute(Constants.CACHE_URL);
     }
 
-    private void loadLocalCache(){
-        FileStore store= new FileStore(this);
-        LocalStorageIndex.getObject().index=store.readIndex();
-        Set<String> indexKeys=LocalStorageIndex.getObject().index.keySet();
-        HashMap<String,String> index= LocalStorageIndex.getObject().index;
+    private void loadLocalCache() {
+        FileStore store = new FileStore(this);
+        LocalStorageIndex.getObject().index = store.readIndex();
+        Set<String> indexKeys = LocalStorageIndex.getObject().index.keySet();
+        HashMap<String, String> index = LocalStorageIndex.getObject().index;
 
         Log.e("Index", index.toString());
 
-        //this if statement is only to print logs so please forgive the complexity of condition statemenet here
-        //i am going to delete it afterwards
-        if(index.get("https://mockapi1.herokuapp.com/index1.html")!=null && store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html"))!=null &&
-                        store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html"))!="") {
-            Log.e("HTML 4m LoadLocalCache", store.readHTML(index.get("https://mockapi1.herokuapp.com/index1.html").toString()));
-        }
+        for (String key : indexKeys) {
+            String urlOfResource = key;
 
-        for(String key: indexKeys){
-            String urlOfResource=key;
+            byte[] data = store.readIntoBytes(index.get(key));
 
-            byte[] data= store.readIntoBytes(index.get(key));
+            boolean isFileCached = CacheMap.getMap().map.containsKey(key);
 
-            boolean isFileCached=CacheMap.getMap().map.containsKey(key);
-
-            if(data!=null && !isFileCached){
+            if (data != null && !isFileCached) {
                 CacheMap.getMap().map.put(key, data);
             }
         }
 
     }
-    private void initBroswer(String initURL){
+
+    private void initBroswer(String initURL) {
 
         browser = (WebView) findViewById(R.id.web_view);
-        browser.setWebViewClient(new Browser(this,this));
+        browser.setWebViewClient(new Browser(this, this));
 
 
         browser.getSettings().setAllowFileAccess(true);
@@ -164,7 +147,6 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         browser.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
 
 
-
         browser.loadUrl(initURL);
 
     }
@@ -173,11 +155,11 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
 
-        if(requestCode==PERMISSIONS_REQUEST_CODE){
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {
 
-            for (int i=0; i<grantResults.length;i++){
+            for (int i = 0; i < grantResults.length; i++) {
 
-                if(grantResults[i]== PackageManager.PERMISSION_DENIED){
+                if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
 
 //
                 }
@@ -187,20 +169,20 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     }
 
 
-    public boolean checkAndRequestPermissions(){
+    public boolean checkAndRequestPermissions() {
 
-        List<String> listPermissionsNeeded=new ArrayList<>();
-        for(String perm: permissions){
+        List<String> listPermissionsNeeded = new ArrayList<>();
+        for (String perm : permissions) {
 
-            if(ContextCompat.checkSelfPermission(this,perm)
-            != PackageManager.PERMISSION_GRANTED){
+            if (ContextCompat.checkSelfPermission(this, perm)
+                    != PackageManager.PERMISSION_GRANTED) {
 
                 listPermissionsNeeded.add(perm);
             }
 
         }
 
-        if(!listPermissionsNeeded.isEmpty()){
+        if (!listPermissionsNeeded.isEmpty()) {
 
             ActivityCompat.requestPermissions(this,
                     listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),
@@ -213,28 +195,34 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     @Override
     public void onTaskCompleted(int reqID) {
-        if(reqID== Constants.GET_CACHE_REQ_ID){
-            for(int i=0; i< CacheInfo.getCacheInfo().resourceCache.size();i++){
+        if (reqID == Constants.GET_CACHE_REQ_ID) {
+            for (int i = 0; i < CacheInfo.getCacheInfo().resourceCache.size(); i++) {
 
-                    GetCacheFile cacheFileRequest= new GetCacheFile(this);
+                GetCacheFile cacheFileRequest = new GetCacheFile(this);
 
-                    String url= CacheInfo.getCacheInfo().resourceCache.get(i);
+                String url = CacheInfo.getCacheInfo().resourceCache.get(i);
 
-                    if(i==CacheInfo.getCacheInfo().resourceCache.size()-1){
-                        cacheFileRequest.setListener(onInitCacheCompleteListener);
-                    }
-                    cacheFileRequest.execute(url);
+                if (i == CacheInfo.getCacheInfo().resourceCache.size() - 1) {
+                    cacheFileRequest.setListener(onInitCacheCompleteListener);
                 }
+                cacheFileRequest.execute(url);
+            }
         }
 
     }
 
-    public void initUI(){
+    public void initUI() {
 
 
         mInitButton.setOnClickListener(this);
         mNoCacheButton.setOnClickListener(this);
         mClearCacheButton.setOnClickListener(this);
+
+        mCacheSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                CacheStatus.getStatusObject().collectCache = isChecked;
+            }
+        });
 
     }
 
@@ -247,15 +235,15 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
     @Override
     public void onClick(View view) {
 
-        if(view.getId()==R.id.init_link){
+        if (view.getId() == R.id.init_link) {
             browser.loadUrl(Constants.INIT_URL_BROWSER);
         }
-        if(view.getId()==R.id.no_cache_link){
+        if (view.getId() == R.id.no_cache_link) {
 
 
             browser.loadUrl(Constants.NO_CACHE_URL_BROWSER);
         }
-        if(view.getId()==R.id.clear_cache_btn){
+        if (view.getId() == R.id.clear_cache_btn) {
             clearRAMCache();
             store.clearCache();
 
@@ -264,18 +252,14 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
 
     }
 
-    private void clearRAMCache(){
+    private void clearRAMCache() {
         browser.clearCache(true);
-        CacheInfo.getCacheInfo().resourceCache= new ArrayList<>();
-        LocalStorageIndex.getObject().index= new HashMap<>();
+        CacheInfo.getCacheInfo().resourceCache = new ArrayList<>();
+        LocalStorageIndex.getObject().index = new HashMap<>();
 
-        CacheMap.getMap().map=new HashMap<>();
+        CacheMap.getMap().map = new HashMap<>();
 
     }
-
-
-
-
 
 
     @Override
@@ -304,17 +288,17 @@ public class WebViewController extends AppCompatActivity implements CacheRequest
         timer.schedule(doAsynchronousTask, 0, 4000); //execute in every 50000 ms
     }
 
-    public void CacheService(){
+    public void CacheService() {
 
-        Queue cacheQueue= CacheRequestModel.getCacheRequests().cacheURLs;
-        if(cacheQueue.size()==0){
+        Queue cacheQueue = CacheRequestModel.getCacheRequests().cacheURLs;
+        if (cacheQueue.size() == 0) {
             mStatusView.setText("Everything is cached! :)");
         }
-        Iterator<String> it= cacheQueue.iterator();
-        for(int i=0; i< cacheQueue.size(); i++){
-            String URL= cacheQueue.poll().toString();
+        Iterator<String> it = cacheQueue.iterator();
+        for (int i = 0; i < cacheQueue.size(); i++) {
+            String URL = cacheQueue.poll().toString();
             mStatusView.setText("Caching Resources");
-            GetCacheFile cachReq= new GetCacheFile(new OnTaskCompleted() {
+            GetCacheFile cachReq = new GetCacheFile(new OnTaskCompleted() {
                 @Override
                 public void onTaskCompleted(int reqID) {
                     mStatusView.setText("Resource Cached");

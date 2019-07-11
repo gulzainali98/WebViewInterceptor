@@ -31,21 +31,20 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
     Activity context;
 
 
+    public GetCacheList() {
+    }
 
-    public GetCacheList(){}
-
-    public GetCacheList(OnTaskCompleted taskCompleted, Activity context){
-        this.taskCompleted=taskCompleted;
-        this.context=context;
+    public GetCacheList(OnTaskCompleted taskCompleted, Activity context) {
+        this.taskCompleted = taskCompleted;
+        this.context = context;
 
     }
 
 
-
     @Override
-    protected JSONObject doInBackground(String... params){
+    protected JSONObject doInBackground(String... params) {
         String stringUrl = params[0];
-        String result= new String();
+        String result = new String();
 
 
         String inputLine;
@@ -56,7 +55,7 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
             //Create a URL object holding our url
             URL myUrl = new URL(stringUrl);
             //Create a connection
-            HttpURLConnection connection =(HttpURLConnection)
+            HttpURLConnection connection = (HttpURLConnection)
                     myUrl.openConnection();
             connection.connect();
             connection.setRequestMethod(REQUEST_METHOD);
@@ -71,7 +70,7 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
             BufferedReader reader = new BufferedReader(streamReader);
             StringBuilder stringBuilder = new StringBuilder();
             //Check if the line we are reading is not null
-            while((inputLine = reader.readLine()) != null){
+            while ((inputLine = reader.readLine()) != null) {
                 stringBuilder.append(inputLine);
             }
             //Close our InputStream and Buffered reader
@@ -80,40 +79,40 @@ public class GetCacheList extends AsyncTask<String, Void, JSONObject> {
             //Set our result equal to our stringBuilder
             result = stringBuilder.toString();
 
-        }
-        catch(IOException e){
+        } catch (IOException e) {
             Log.e("Exception", e.getMessage());
         }
         JSONParser parser = new JSONParser();
-        JSONObject json= new JSONObject();
+        JSONObject json = new JSONObject();
         try {
             json = (JSONObject) parser.parse(result);
-        }
-        catch(ParseException e){
+        } catch (ParseException e) {
 
         }
 
         return json;
     }
-    @Override
-    protected void onPostExecute(JSONObject result){
-        Log.e("Result",result.toString());
 
-        ArrayList<String> cacheResource= new ArrayList<>();
-        Set<String> keys= result.keySet();
+    @Override
+    protected void onPostExecute(JSONObject result) {
+        Log.e("Result", result.toString());
+
+        ArrayList<String> cacheResource = new ArrayList<>();
+        Set<String> keys = result.keySet();
 
 //        Iterator<String> keys = result.keySet();
 
-            for(String key : keys){
+        for (String key : keys) {
 
 
-                    // do something with jsonObject here
-                    cacheResource.add(String.valueOf(result.get(key)));
+            // do something with jsonObject here
+            cacheResource.add(String.valueOf(result.get(key)));
 
-            }
-        CacheInfo.getCacheInfo().resourceCache=cacheResource;
-            if(taskCompleted!=null){
-        taskCompleted.onTaskCompleted(Constants.GET_CACHE_REQ_ID);}
+        }
+        CacheInfo.getCacheInfo().resourceCache = cacheResource;
+        if (taskCompleted != null) {
+            taskCompleted.onTaskCompleted(Constants.GET_CACHE_REQ_ID);
+        }
 
 
         super.onPostExecute(result);

@@ -9,13 +9,13 @@ public class CacheInfo {
 
     private static CacheInfo object;
 
-    public CacheInfo(){
-        resourceCache= new ArrayList<String>();
+    public CacheInfo() {
+        resourceCache = new ArrayList<String>();
     }
 
-    public static CacheInfo getCacheInfo(){
-        if(object==null){
-            object= new CacheInfo();
+    public static CacheInfo getCacheInfo() {
+        if (object == null) {
+            object = new CacheInfo();
         }
         return object;
     }
